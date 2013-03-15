@@ -5,10 +5,8 @@ use warnings;
 use Cwd;
 use File::Basename;
 use File::Find;
-use Data::Dumper;
 use Term::ReadKey;
 
-my $homeDir = $ENV{"HOME"};
 my $cwd = getcwd;
 my $intellijProjectDir = basename $cwd;
 my $sourceBaseDir = $ARGV[0];

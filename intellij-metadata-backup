@@ -5,9 +5,7 @@ use warnings;
 use Cwd;
 use File::Basename;
 use File::Find;
-use Data::Dumper;
 
-my $homeDir = $ENV{"HOME"};
 my $cwd = getcwd;
 my $intellijProjectDir = basename $cwd;
 my $backupBaseDir = $ARGV[0];
