@@ -16,8 +16,8 @@ unless (-f $projFile) {
   die "This doesn't look like an intellij project directory, couldn't find $projFile";
 }
 
-my ($s, $m, $h, $d, $m, $y) = (localtime(time))[0, 1, 2, 3, 4, 5];
-my $timeSuffix = sprintf('%04d-%02d-%02d-%02d:%02d:%02d', $y + 1900, $m + 1, $d, $h, $m, $s);
+my ($second, $minute, $hour, $day, $month, $year) = (localtime(time))[0, 1, 2, 3, 4, 5];
+my $timeSuffix = sprintf('%04d-%02d-%02d-%02d:%02d:%02d', $year + 1900, $month + 1, $day, $hour, $minute, $second);
 my $baseDestDir = "$backupBaseDir/$intellijProjectDir-$timeSuffix";
 
 find({wanted => sub {
