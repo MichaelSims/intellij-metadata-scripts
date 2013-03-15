@@ -1,0 +1,58 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd;
+use File::Basename;
+use File::Find;
+use Data::Dumper;
+
+my $homeDir = $ENV{"HOME"};
+my $cwd = getcwd;
+my $intellijProjectDir = basename $cwd;
+my $backupBaseDir = $ARGV[0];
+
+die "Please provide a valid destination directory as the first argument" unless (defined $backupBaseDir && -d $backupBaseDir);
+my $projFile = $intellijProjectDir.".ipr";
+unless (-f $projFile) {
+  die "This doesn't look like an intellij project directory, couldn't find $projFile";
+}
+
+my ($s, $m, $h, $d, $m, $y) = (localtime(time))[0, 1, 2, 3, 4, 5];
+my $timeSuffix = sprintf('%04d-%02d-%02d-%02d:%02d:%02d', $y + 1900, $m + 1, $d, $h, $m, $s);
+my $baseDestDir = "$backupBaseDir/$intellijProjectDir-$timeSuffix";
+
+find({wanted => sub {
+
+     return unless (-d $_);
+     my @files = map { $_ = "\"$_\""; } glob("$_/*.i[pwm][rsl]");
+     my $numFiles = scalar @files;
+     return unless ($numFiles > 0);
+
+     my $relativeFilePath = $_;
+     my $quotedCwd = quotemeta $cwd;
+     $relativeFilePath =~ s/^$quotedCwd//g;
+     my $destDir = "$baseDestDir$relativeFilePath/";
+     
+     
+     my $fileList = join(' ' => @files);
+     runCommand("mkdir -p $destDir && cp -a $fileList $destDir");
+
+}, no_chdir => 1}, $cwd);
+
+sub runCommand {
+
+  my $cmd = shift;
+
+  print STDERR "Executing $cmd...";
+  system($cmd);
+  print STDERR " done.\n";
+
+  if ($? != 0) {
+    print STDERR "Command \"$cmd\" failed, return value was $?\n";
+    exit 1;
+  } else {
+    return 1;
+  }
+
+}

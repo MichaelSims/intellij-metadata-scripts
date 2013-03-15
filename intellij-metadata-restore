@@ -1,0 +1,97 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Cwd;
+use File::Basename;
+use File::Find;
+use Data::Dumper;
+use Term::ReadKey;
+
+my $homeDir = $ENV{"HOME"};
+my $cwd = getcwd;
+my $intellijProjectDir = basename $cwd;
+my $sourceBaseDir = $ARGV[0];
+
+die "Please provide a valid source directory as the first argument" unless (defined $sourceBaseDir && -d $sourceBaseDir);
+
+my $prompt = <<_EOF_;
+WARNING!
+This will overwrite the IntelliJ project files in the current directory ($cwd)
+with files from $sourceBaseDir.
+(Closing IntelliJ first is highly recommended.)
+Are you sure you want to continue [y/n]? 
+_EOF_
+chomp $prompt;
+exit 1 unless(promptUser($prompt, 'yN') eq 'y');
+
+find({wanted => sub {
+
+     return unless (-d $_);
+
+     my $relativeFilePath = $_;
+     my $quotedCwd = quotemeta $cwd;
+     $relativeFilePath =~ s/^$quotedCwd//g;
+     my $sourceDir = "$sourceBaseDir$relativeFilePath";
+     return unless (-d $sourceDir);
+     
+     runCommand("cp -a $sourceDir/*.i[pmw][rls] $_");
+
+}, no_chdir => 1}, $cwd);
+
+sub runCommand {
+
+  my $cmd = shift;
+
+  print STDERR "Executing $cmd...";
+  system($cmd);
+  print STDERR " done.\n";
+
+  if ($? != 0) {
+    print STDERR "Command \"$cmd\" failed, return value was $?\n";
+    exit 1;
+  } else {
+    return 1;
+  }
+
+}
+
+sub promptUser {
+
+  my ($prompt, $allowedResponses) = @_;
+
+  # Parse allowed responses
+  my %allowedResponses;
+  my $defaultResponse;
+
+  foreach (split //, $allowedResponses) {
+    $defaultResponse = $_ if ($_ eq uc $_); # Upper case indicates default
+    $allowedResponses{lc $_} = 1;
+  }
+
+  my $response;
+  for (;;) {
+
+    # Print prompt and read response
+    print $prompt;
+    $response = trim(ReadLine(0));
+    $response = lc substr $response, 0, 1; # Get first character of response and lc it
+
+    # If no response was given and a default is defined, go with it
+    if ((!defined $response || $response eq '') && defined $defaultResponse) {
+      $response = $defaultResponse;
+      last;
+    }
+
+    # Accept response if it's allowed
+    last if (defined $allowedResponses{$response});
+
+    print "Your response was not recognized; please try again.\n";
+
+  }
+
+  return lc $response;
+
+}
+
+sub trim { my ($str) = @_; $str =~ s/^\s+//; $str =~ s/\s+$//; return $str }
